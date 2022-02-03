@@ -1,6 +1,7 @@
 # SEDtools
 A simple tool that read and plots outputs from either magphys/sed3fit.
-Prerequisites: full_magphys_read and sed3fit_read packages installed.
+
+Requires full_magphys_read and sed3fit_read packages installed.
 
 Usage:
 ```python
