@@ -67,7 +67,7 @@ class SEDProperties:
                  plot_torus = False, plot_dustySF = False, plot_StUn = False, \
                  plot_uplims = True, plot_identifier = True, plot_chi = True, plot_RF = True, \
                  zphot_text_fontsize = 15, zphot_label_fontsize = 13, z_inset_xlength = 0.45, \
-                 zphot_inset_xmin = 0, zphot_inset_xmax = 8, zphot_text_xtext = False, \
+                 zphot_inset_xmin = 0, zphot_inset_xmax = 8, zphot_text_xtext = False, fontsize = 13, \
                  SED_observed_color = 'tab:red', SED_model_color = 'k', obs_ms = 5, \
                  xmin = 1E-1, xmax = 3E5, ymin = -8, ymax = 2):
         
@@ -99,7 +99,7 @@ class SEDProperties:
         if plot_chi: ax_SED.plot(-100, -100, color = 'None', ms = 0, linewidth = 0, label = r'$\chi^2 = {:.3f}$'.format(self.results.bestfit_chi2))
         if self.z_type == 'spec': ax_SED.plot(-100, -100, color = 'None', ms = 0, linewidth = 0, label = r'$z_s = {:.4f}$'.format(self.z_source))
         ax_SED.set_xlim(xmin, xmax), ax_SED.set_ylim(ymin, ymax)
-        ax_SED.legend(loc = 'upper right', frameon=False, fontsize = 13)
+        ax_SED.legend(loc = 'upper right', frameon=False, fontsize = fontsize)
         ax_SED.tick_params(axis='both', which='major', direction = 'in', labelsize=15)
         ax_SED.tick_params(axis='both', which='minor', direction = 'in', labelsize=8)
         ax_SED.yaxis.set_minor_locator(AutoMinorLocator())
