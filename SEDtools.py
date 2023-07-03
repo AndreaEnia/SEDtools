@@ -133,6 +133,41 @@ class SEDProperties:
             ax_zPDF.set_yticks([], minor=True)
         else: pass
         return
+    
+    def plot_PDZ(self, ax_zPDF, identifier, \
+                 zphot_text_fontsize = 15, zphot_label_fontsize = 13, z_inset_xlength = 0.45, \
+                 zphot_inset_xmin = 0, zphot_inset_xmax = 8, zphot_text_xtext = False, fontsize = 13, \
+                 SED_model_color = 'k', obs_ms = 5):
+        
+        from matplotlib.ticker import (MultipleLocator, FormatStrFormatter, AutoMinorLocator)
+        z_bins = self.results.marginal_pdfs['redshift'][:,0]
+        z_PDF = self.results.marginal_pdfs['redshift'][:,1]
+        ax_zPDF.bar(z_bins, z_PDF, width = z_bins[1]-z_bins[0], edgecolor = SED_model_color, color = 'None')
+        bestfit = self.results.marginal_percentiles['redshift'][2]
+        m1s, p1s = bestfit-self.results.marginal_percentiles['redshift'][1], self.results.marginal_percentiles['redshift'][3]-bestfit
+        text = r'$\mathcal{{Z}}_{{\rm phot}} = {0:.2f}^{{+{1:.2f}}}_{{-{2:.2f}}}$'.format(bestfit, p1s, m1s)
+        if zphot_text_xtext != False: xtext = np.copy(zphot_text_xtext)
+        else: xtext = (zphot_inset_xmax - zphot_inset_xmin)/2
+        ytext = z_PDF.ptp()/1.4
+        ax_zPDF.plot(xtext, ytext, color = 'None', ms = 0, linewidth = 0, label = '{}'.format(identifier))
+        ax_zPDF.plot(xtext, ytext, color = 'None', ms = 0, linewidth = 0, label = '{}'.format(text))
+        #ax_zPDF.text(xtext, ytext, text, fontsize = zphot_text_fontsize, color = SED_model_color)
+        ax_zPDF.set_xlim(zphot_inset_xmin, zphot_inset_xmax)
+        ax_zPDF.legend(loc = 'upper right', frameon=False, fontsize = fontsize)
+        ax_zPDF.set_xlabel(r'$\mathcal{Z}_{\rm PDF}$', fontsize = zphot_label_fontsize)
+        ax_zPDF.xaxis.set_minor_locator(AutoMinorLocator())
+        ax_zPDF.yaxis.set_minor_locator(AutoMinorLocator())
+        #ax_zPDF.set_yticks([], minor=True)
+        return
+    
+    def PDZ_at_z(self, given_z):
+        from scipy.interpolate import interp1d
+        z_bins = self.results.marginal_pdfs['redshift'][:,0]
+        z_PDF = self.results.marginal_pdfs['redshift'][:,1]
+        x = np.linspace(0, 15, 1000)
+        y = np.interp(x, z_bins, z_PDF, left=0, right=0)
+        f = interp1d(x, y, bounds_error = False, fill_value = 0)
+        return f(given_z)
         
 import numpy as np
 
@@ -144,11 +179,13 @@ def round_arr(x, sig=2):
 def band_disambiguation(band):
     if band in ['GALEX_FUV', 'GALEX FUV']: return 'GALEXFUV'
     if band in ['GALEX_NUV', 'GALEX NUV']: return 'GALEXNUV'
-    if band in ['SDSS u', 'Sloan u']: return 'SDSS_u'
-    if band in ['SDSS g', 'Sloan g']: return 'SDSS_g'
-    if band in ['SDSS r', 'Sloan r']: return 'SDSS_r'
-    if band in ['SDSS i', 'Sloan i']: return 'SDSS_i'
-    if band in ['SDSS z', 'Sloan z']: return 'SDSS_z'
+    if band in ['SUBARU_B']: return 'B'
+    if band in ['SUBARU_V']: return 'V'
+    if band in ['SDSS_u', 'SDSS u', 'Sloan u']: return 'u'
+    if band in ['SDSS_g', 'SDSS g', 'Sloan g']: return 'g'
+    if band in ['SDSS_r', 'SDSS r', 'Sloan r']: return 'r'
+    if band in ['SDSS_i', 'SDSS i', 'Sloan i']: return 'i'
+    if band in ['SDSS_z', 'SDSS z', 'Sloan z']: return 'z'
     if band in ['ACS_F435W']: return 'F435W'
     if band in ['ACS_F606W']: return 'F606W'
     if band in ['ACS_F775W']: return 'F775W'
@@ -158,9 +195,10 @@ def band_disambiguation(band):
     if band in ['WFC3_F125W']: return 'F125W'
     if band in ['WFC3_F140W']: return 'F140W'
     if band in ['WFC3_F160W']: return 'F160W'
-    if band in ['2MASS_J', '2MASS J']: return 'J'
-    if band in ['2MASS_H', '2MASS H']: return 'H'
-    if band in ['2MASS_Ks', '2MASS Ks', '2MASS K']: return 'Ks'
+    if band in ['VISTA_Y']: return 'Y'
+    if band in ['2MASS_J', '2MASS J', 'VISTA_J']: return 'J'
+    if band in ['2MASS_H', '2MASS H', 'VISTA_H']: return 'H'
+    if band in ['2MASS_Ks', '2MASS Ks', '2MASS K', 'VISTA_Ks', 'KS']: return 'Ks'
     if band in ['WISE_3.4', 'WISE 3.4']: return 'WISEW1'
     if band in ['WISE_4.6', 'WISE 4.6']: return 'WISEW2'
     if band in ['WISE_12', 'WISE 12']: return 'WISEW3'
@@ -181,8 +219,9 @@ def band_disambiguation(band):
     if band in ['SPIRE_500', 'SPIRE 500', '500']: return 'SPIRE500'
     if band in ['SMA', 'SMA_880']: return 'SMA880'
     if band in ['SCUBA', 'SCUBA_850', 'SCUBA2', '850']: return 'SCUBA850'
-    if band in ['AzTEC', 'MAMBO', '1160']: return 'AzTEC+MAMBO'
-    if band in ['VLA20cm', 'VLA1.4GHz']: return 'VLA20cm'
+    if band in ['AzTEC', 'MAMBO', 'MAMBO250', 'MAMBO250.', '1160']: return 'AzTEC+MAMBO'
+    if band in ['VLA10cm', 'VLA3GHz', '3GHz']: return '10cm'
+    if band in ['MIGHTEE', 'VLA20cm', 'VLA_L', 'VLA1.4GHz', '1_4GHz']: return '20cm'
     return band
 
 def flatten(l, ltypes=(list, tuple)):
@@ -216,13 +255,20 @@ def LogError(value, error):
 def remove_duplicates(x):
     return np.array(list(dict.fromkeys(x)))
 
-Wvlghts_dictionary = {'GALEX_FUV': 0.1528, 'GALEXFUV': 0.1528, 'GALEX_NUV': 0.2271, 'GALEXNUV': 0.2271, 'SDSS_u': 0.3551, 'KPNO_U': 0.3593, 'LBC_U': 0.3633, \
-                    'F435W': 0.4318, 'SUBARU_B': 0.4458, 'SUBARU_V': 0.5477, 'SUBARU_ip': 0.7683, 'VISTA_Y': 1.021419, 'VISTA_J': 1.253465, 'VISTA_H': 1.645341, \
-                    'VISTA_Ks': 2.153988, 'SDSS_g': 0.4686, 'F606W': 0.5915, 'SDSS_r': 0.6166, 'SDSS_i': 0.748, 'F775W': 0.7693, 'F814W': 0.81, 'SDSS_z': 0.8932, \
+Wvlghts_dictionary = {'GALEX_FUV': 0.1528, 'GALEXFUV': 0.1528, 'GALEX_NUV': 0.2271, 'GALEXNUV': 0.2271, 'u': 0.3551, 'KPNO_U': 0.3593, 'LBC_U': 0.3633, \
+                      'F275W': 0.2750, 'F336W': 0.3360, 'F350LP': 0.3500, 'F110W': 1.100, \
+                    'F435W': 0.4318, 'B': 0.4458, 'V': 0.5477, 'SUBARU_ip': 0.7683, 'Y': 1.021419, 'g': 0.4686, \
+                    'F606W': 0.5915, 'r': 0.6166, 'i': 0.748, 'F775W': 0.7693, 'F814W': 0.81, 'z': 0.8932, \
+                    'F182M': 1.82, 'F210M': 2.10, 'F444W': 4.44, \
                     'F850LP': 0.9, 'F850L': 0.9, 'F105W': 1.01, 'F125W': 1.25, 'J': 1.25, '2MASS_J': 1.25, 'F140W': 1.39, 'F160W': 1.54, 'H': 1.65, '2MASS_H': 1.65,
-                    'MOIRCS_K': 2.13, 'Ks': 2.16, 'KS': 2.16, 'K': 2.16, '2MASS_Ks': 2.16, 'CFHT_Ks': 2.16, 'WISE_3.4': 3.4, 'WISEW1': 3.4, 'Spitzer_3.6': 3.56, 
+                    'MOIRCS_K': 2.13, 'Ks': 2.16, 'K': 2.16, '2MASS_Ks': 2.16, 'CFHT_Ks': 2.16, 'WISE_3.4': 3.4, 'WISEW1': 3.4, 'Spitzer_3.6': 3.56, 
                     'IRAC1': 3.56, 'Spitzer_4.5': 4.51, 'IRAC2': 4.51, 'WISE_4.6': 4.6, 'WISEW2': 4.6, 'Spitzer_5.8': 5.76, 'IRAC3': 5.76, 'Spitzer_8.0': 8.0, 
                     'IRAC4': 8.0, 'WISE_12': 12.0, 'WISEW3': 12.0, 'IRS16': 16.0, 'WISE_22': 22.0, 'WISEW4': 22.0, 'Spitzer_24': 24.0, 'MIPS_24': 24.0, 
                     'MIPS24': 24.0, 'MIPS_70': 70.0, 'MIPS70': 70.0, 'PACS_70': 70.0, 'PACS70': 70.0, 'PACS_100': 100.0, 'PACS100': 100.0, 'PACS_160': 160.0, \
                     'PACS160': 160.0, 'SPIRE_250': 250.0, 'SPIRE250': 250.0, 'SPIRE_350': 350.0, 'SPIRE350': 350.0, 'SPIRE_500': 500.0, 'SPIRE500': 500.0, \
-                    'SCUBA850': 850.0, 'SMA': 860.0, 'SMA880': 880.0, 'AzTEC+MAMBO': 1160.0, 'VLA10cm': 100000.0, 'VLA20cm': 200000.0}
+                    'SCUBA850': 850.0, 'SMA': 860.0, 'SMA880': 880.0, 'AzTEC+MAMBO': 1160.0, '10cm': 100000.0, '20cm': 200000.0, \
+                    'NOEMAB4': 925.2, 'NOEMAB3': 1300.0, 'NOEMAB2': 2000.0, 'NOEMAB1': 3380.0, \
+                    'A857um': 857, 'A860um': 860, 'A873um': 873, 'A874um': 874, 'A894um': 894, \
+                    'A1209um': 1209, 'A1215um': 1215, 'A1218um': 1218, 'A1249um': 1249, 'A1287um': 1287, 'A1313um': 1313, \
+                    'A2196um': 2196, 'A2899um': 2899, 'A2912um': 2912, 'A3010um': 3010, 'A3018um': 3018, 'A3151um': 3151, \
+                    'A3187um': 3187, 'A3198um': 3198, 'A3214um': 3214, 'A3217um': 3217}
